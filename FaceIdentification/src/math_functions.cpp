@@ -30,6 +30,32 @@
  */
 
 #include "math_functions.h"
+
+#ifndef __SSE__
+//support arm
+float simd_dot(const float* x, const float* y, const long& len) {
+    float inner_prod = 0.0f;
+    float32x4_t X,Y;
+    float32x4_t acc = vdupq_n_f32(0);
+    float temp[4];
+    long i ;
+    for (int i = 0; i + 4 <len; i+=4) {
+        X = vld1q_f32(x + i);
+        Y = vld1q_f32(y + i);
+        acc = vaddq_f32(acc, vmulq_f32(X, Y));
+    }
+    vst1q_f32(&temp[0], acc); // store acc into an array
+    inner_prod = temp[0] + temp[1] + temp[2] + temp[3];
+    
+    // add the remaining values
+    for (; i < len; ++i) {
+        inner_prod += x[i] * y[i];
+    }
+    return inner_prod;
+}
+
+#else
+
 #include <xmmintrin.h>
 #include <cstdint>
 
@@ -60,6 +86,7 @@ float simd_dot(const float* x, const float* y, const long& len) {
   }
   return inner_prod;
 }
+#endif
 
 void matrix_procuct(const float* A, const float* B, float* C, const int n,
     const int m, const int k, bool ta, bool tb) {
